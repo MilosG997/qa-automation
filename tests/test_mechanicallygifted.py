@@ -55,6 +55,20 @@ def test_portfolio_links_open_in_new_tab(driver):
         assert "noopener" in a.get_attribute("rel")
 
 
+@pytest.mark.parametrize("path", ["/", "/en/"])
+def test_portfolio_filters_really_hide_cards(driver, wait, path):
+    """Each filter must show only its own cards (checks what is displayed, not just the hidden flag)."""
+    driver.get(BASE + path)
+    cards = driver.find_elements(By.CSS_SELECTOR, "#radovi .work .case")
+    for button in driver.find_elements(By.CSS_SELECTOR, ".filteri [data-filter]"):
+        category = button.get_attribute("data-filter")
+        driver.execute_script("arguments[0].click()", button)
+        expected = [c for c in cards if category == "sve" or c.get_attribute("data-cat") == category]
+        assert expected, f"filter {category} has no cards, so its button should not exist"
+        wait(driver, 5).until(lambda d: [c for c in cards if c.is_displayed()] == expected)
+        assert button.get_attribute("aria-pressed") == "true"
+
+
 def test_copy_button_gives_feedback(driver, wait):
     driver.get(BASE + "/")
     button = driver.find_element(By.ID, "b0")
