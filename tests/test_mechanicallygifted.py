@@ -47,8 +47,8 @@ def test_contact_links_are_clickable(driver):
 
 def test_portfolio_links_open_in_new_tab(driver):
     driver.get(BASE + "/")
-    links = driver.find_elements(By.CSS_SELECTOR, "#radovi .case a")
-    assert len(links) >= 3
+    links = driver.find_elements(By.CSS_SELECTOR, "#radovi .folders .item a")
+    assert len(links) >= 5
     for a in links:
         assert a.get_attribute("href").startswith("https://")
         assert a.get_attribute("target") == "_blank"
@@ -56,17 +56,19 @@ def test_portfolio_links_open_in_new_tab(driver):
 
 
 @pytest.mark.parametrize("path", ["/", "/en/"])
-def test_portfolio_filters_really_hide_cards(driver, wait, path):
-    """Each filter must show only its own cards (checks what is displayed, not just the hidden flag)."""
+def test_portfolio_folders_open_one_at_a_time(driver, wait, path):
+    """Folders start closed; opening one shows its items and closes the others; badge = number of items."""
     driver.get(BASE + path)
-    cards = driver.find_elements(By.CSS_SELECTOR, "#radovi .work .case")
-    for button in driver.find_elements(By.CSS_SELECTOR, ".filteri [data-filter]"):
-        category = button.get_attribute("data-filter")
-        driver.execute_script("arguments[0].click()", button)
-        expected = [c for c in cards if category == "sve" or c.get_attribute("data-cat") == category]
-        assert expected, f"filter {category} has no cards, so its button should not exist"
-        wait(driver, 5).until(lambda d: [c for c in cards if c.is_displayed()] == expected)
-        assert button.get_attribute("aria-pressed") == "true"
+    folders = driver.find_elements(By.CSS_SELECTOR, "#radovi .folders .f")
+    assert len(folders) == 4
+    heads = [f.find_element(By.CSS_SELECTOR, ".head") for f in folders]
+    assert all(h.get_attribute("aria-expanded") == "false" for h in heads)
+    for folder, head in zip(folders, heads):
+        driver.execute_script("arguments[0].click()", head)
+        items = folder.find_elements(By.CSS_SELECTOR, ".item")
+        wait(driver, 5).until(lambda d: all(i.is_displayed() for i in items))
+        assert int(folder.find_element(By.CSS_SELECTOR, ".cnt").text) == len(items)
+        assert [h.get_attribute("aria-expanded") for h in heads].count("true") == 1
 
 
 def test_copy_button_gives_feedback(driver, wait):
