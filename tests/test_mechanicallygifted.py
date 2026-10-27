@@ -204,9 +204,10 @@ def test_web_design_lightbox(driver, wait):
     driver.execute_script("arguments[0].click()", first)
     box = wait(driver, 5).until(lambda d: d.find_element(By.CSS_SELECTOR, ".lb.otvoren"))
     counter = box.find_element(By.CSS_SELECTOR, ".lb-broj")
-    assert counter.text.startswith("1 / ")
+    # the box fades in: wait until the counter is really shown (slower CI machines read it mid-animation)
+    wait(driver, 5).until(lambda d: counter.text.startswith("1 / "))
     driver.execute_script("arguments[0].click()", box.find_element(By.CSS_SELECTOR, ".lb-sled"))
-    assert counter.text.startswith("2 / ")
+    wait(driver, 5).until(lambda d: counter.text.startswith("2 / "))
     driver.switch_to.active_element.send_keys(Keys.ESCAPE)
     wait(driver, 5).until(lambda d: not box.is_displayed())
 
