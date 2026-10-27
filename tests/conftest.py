@@ -4,6 +4,7 @@ Options:
     pytest --browser edge      run in Microsoft Edge instead of Chrome
     pytest --headed            show the browser window (default is headless)
 """
+import os
 from pathlib import Path
 
 import pytest
@@ -65,6 +66,14 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     rep = outcome.get_result()
     setattr(item, "rep_" + rep.when, rep)
+
+
+def pytest_runtest_logreport(report):
+    """On GitHub Actions, show every failure as an annotation on the run page (no need to open the log)."""
+    if os.environ.get("GITHUB_ACTIONS") and report.failed and report.when in ("setup", "call"):
+        message = str(report.longrepr).strip().splitlines()[-1][:300]
+        path, line = report.location[0], (report.location[1] or 0) + 1
+        print(f"\n::error file={path},line={line},title={report.nodeid}::{message}", flush=True)
 
 
 def _screenshot_on_failure(request, driver):
