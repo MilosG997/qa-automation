@@ -68,12 +68,20 @@ def pytest_runtest_makereport(item, call):
     setattr(item, "rep_" + rep.when, rep)
 
 
-def pytest_runtest_logreport(report):
-    """On GitHub Actions, show every failure as an annotation on the run page (no need to open the log)."""
-    if os.environ.get("GITHUB_ACTIONS") and report.failed and report.when in ("setup", "call"):
-        message = str(report.longrepr).strip().splitlines()[-1][:300]
-        path, line = report.location[0], (report.location[1] or 0) + 1
-        print(f"\n::error file={path},line={line},title={report.nodeid}::{message}", flush=True)
+def pytest_terminal_summary(terminalreporter, exitstatus):
+    """On GitHub Actions, show every failure and error (setup, test, teardown or collection) as an annotation on the
+    run page, so the reason is visible without opening the log."""
+    if not os.environ.get("GITHUB_ACTIONS"):
+        return
+    shown = 0
+    for kind in ("failed", "error"):
+        for report in terminalreporter.stats.get(kind, []):
+            lines = str(getattr(report, "longrepr", "") or kind).strip().splitlines()
+            where = f'{getattr(report, "when", "collect")}: {getattr(report, "nodeid", "") or "collection"}'
+            terminalreporter.write_line(f"::error title={kind} in {where}::{lines[-1][:300] if lines else kind}")
+            shown += 1
+    if exitstatus and not shown:
+        terminalreporter.write_line(f"::error title=pytest exit status {int(exitstatus)}::no test failed, see the log")
 
 
 def _screenshot_on_failure(request, driver):

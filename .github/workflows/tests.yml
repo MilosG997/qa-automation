@@ -14,7 +14,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: pytest --browser chrome -n 4 --reruns 2 --reruns-delay 5
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: screenshots
