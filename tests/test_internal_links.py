@@ -13,7 +13,13 @@ SITES = {"draganicstolarija.rs": "https://draganicstolarija.rs", "mechanicallygi
 
 
 def _sitemap_pages(base):
-    return re.findall(r"<loc>([^<]+)</loc>", http.get(base + "/sitemap.xml", timeout=20).text)
+    """Pages are read while tests are collected; if the sitemap cannot be fetched at that moment, fall back to the
+    home page so one network hiccup cannot stop the whole run (the sitemap itself is tested elsewhere)."""
+    try:
+        pages = re.findall(r"<loc>([^<]+)</loc>", http.get(base + "/sitemap.xml", timeout=20).text)
+    except Exception:
+        pages = []
+    return pages or [base + "/"]
 
 
 def _internal_targets(page_url, base):

@@ -4,7 +4,7 @@
 
 End-to-end tests for a live Shopify store and three websites I built. The tests open a real browser, click through the site like a visitor and check what a customer (and Google) would see, on desktop and on a 375px phone. A second layer uses `requests` for what a browser hides: redirects, status codes, security headers and API responses.
 
-**216 tests** across 4 live sites, run on every push and every Monday.
+**216 tests** across 4 live sites, run on every push (and on demand from the Actions tab).
 
 | Test file | Site | What it checks |
 |---|---|---|
@@ -51,7 +51,7 @@ DS_URL=http://localhost:5530 pytest tests/test_draganic_stolarija.py
 - **Shared checks** in [`helpers.py`](tests/helpers.py): broken or alt-less images (lazy ones forced to load), in-page links without a target, JSON-LD parsing, horizontal scroll on phones.
 - **Explicit waits** (`WebDriverWait` + expected conditions) instead of `sleep`, so tests are fast and stable on slow pages.
 - **Screenshot on failure**: a failed test saves `screenshots/<test-name>.png`; in CI it is uploaded as an artifact.
-- **GitHub Actions** runs the whole suite in parallel on every push and every Monday morning, so a change on a live site is caught within a week.
+- **GitHub Actions** runs the whole suite in parallel on every push, on a pinned Ubuntu 24.04 runner; *Run workflow* in the Actions tab checks the live sites at any time.
 - Selenium Manager downloads the right driver automatically, no manual chromedriver.
 
 ---

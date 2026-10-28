@@ -2,13 +2,11 @@ name: tests
 
 on:
   push:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 6 * * 1"   # every Monday: catches changes on the live sites
+  workflow_dispatch:   # "Run workflow" button in the Actions tab, to check the live sites at any time
 
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: a new runner image cannot change results overnight
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
