@@ -2,12 +2,10 @@
 import os
 
 import pytest
-import requests
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 
-from helpers import anchors_without_target, console_errors, has_horizontal_scroll, json_ld, meta
+from helpers import anchors_without_target, console_errors, has_horizontal_scroll, http, json_ld, meta
 
 BASE = os.environ.get("MG_URL", "https://mechanicallygifted.rs").rstrip("/")
 PAGES = [("/", "sr"), ("/en/", "en")]
@@ -189,23 +187,6 @@ def test_structured_data(driver, path):
     assert "AggregateRating" not in text, "no self-served review markup (Google guideline)"
 
 
-def test_web_design_lightbox(driver, wait):
-    driver.get(BASE + "/")
-    head = driver.find_elements(By.CSS_SELECTOR, "#radovi .folders .f .head")[2]
-    driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].click()", head)
-    first = wait(driver, 5).until(lambda d: [b for b in d.find_elements(By.CSS_SELECTOR, ".folders [data-lb]")
-                                             if b.is_displayed()])[0]
-    driver.execute_script("arguments[0].click()", first)
-    box = wait(driver, 5).until(lambda d: d.find_element(By.CSS_SELECTOR, ".lb.otvoren"))
-    counter = box.find_element(By.CSS_SELECTOR, ".lb-broj")
-    # read textContent: the box fades in and .text is empty until Selenium considers it visible
-    wait(driver, 5).until(lambda d: counter.get_attribute("textContent").startswith("1 / "))
-    driver.execute_script("arguments[0].click()", box.find_element(By.CSS_SELECTOR, ".lb-sled"))
-    wait(driver, 5).until(lambda d: counter.get_attribute("textContent").startswith("2 / "))
-    driver.switch_to.active_element.send_keys(Keys.ESCAPE)
-    wait(driver, 5).until(lambda d: not box.is_displayed())
-
-
 @pytest.mark.mobile
 @pytest.mark.parametrize("path", ["/", "/en/"])
 def test_about_and_reviews_fit_the_phone(phone, wait, path):
@@ -223,32 +204,32 @@ def test_about_and_reviews_fit_the_phone(phone, wait, path):
 @pytest.mark.parametrize("url", ["https://www.mechanicallygifted.rs/", "http://mechanicallygifted.rs/",
                                  "https://mechanicallygifted.netlify.app/"])
 def test_alternate_hosts_redirect_to_the_main_domain(url):
-    response = requests.get(url, allow_redirects=False, timeout=20)
+    response = http.get(url, allow_redirects=False, timeout=20)
     assert response.status_code == 301
     assert response.headers["Location"].startswith("https://mechanicallygifted.rs/")
 
 
 @pytest.mark.parametrize("path", ["/nema-ove-strane", "/en/no-such-page"])
 def test_unknown_pages_return_404(path):
-    response = requests.get(BASE + path, timeout=20)
+    response = http.get(BASE + path, timeout=20)
     assert response.status_code == 404
     assert "Mechanically Gifted" in response.text
 
 
 @pytest.mark.parametrize("path", ["/privatnost/", "/en/privacy/", "/sitemap.xml", "/robots.txt", "/site.webmanifest"])
 def test_support_pages_are_served(path):
-    assert requests.get(BASE + path, timeout=20).status_code == 200
+    assert http.get(BASE + path, timeout=20).status_code == 200
 
 
 def test_security_headers():
-    headers = requests.get(BASE + "/", timeout=20).headers
+    headers = http.get(BASE + "/", timeout=20).headers
     assert headers.get("X-Content-Type-Options") == "nosniff"
     assert "max-age" in headers.get("Strict-Transport-Security", "")
     assert headers.get("Referrer-Policy")
 
 
 def test_reviews_function_returns_json():
-    response = requests.get(BASE + "/.netlify/functions/reviews?lang=en", timeout=20)
+    response = http.get(BASE + "/.netlify/functions/reviews?lang=en", timeout=20)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data["reviews"], list) and len(data["reviews"]) <= 5

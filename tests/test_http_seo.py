@@ -6,7 +6,8 @@ HTML exactly as it is served: language, Open Graph, robots, hreflang pairs, asse
 import re
 
 import pytest
-import requests
+
+from helpers import http
 
 DS = "https://draganicstolarija.rs"
 MG = "https://mechanicallygifted.rs"
@@ -18,7 +19,7 @@ MG_PAGES = {"/": "sr", "/en/": "en", "/privatnost/": "sr", "/en/privacy/": "en"}
 
 
 def _get(url):
-    response = requests.get(url, timeout=20)
+    response = http.get(url, timeout=20)
     response.raise_for_status()
     return response.text
 
@@ -43,13 +44,13 @@ def test_draganic_page_head(path):
 @pytest.mark.parametrize("path", DS_PAGES)
 def test_draganic_share_image_is_served(path):
     image = _og(_get(DS + path), "image")
-    response = requests.head(image, timeout=20)
+    response = http.head(image, timeout=20)
     assert response.status_code == 200
     assert response.headers["Content-Type"].startswith("image/")
 
 
 def test_draganic_404_is_not_indexed():
-    response = requests.get(DS + "/nema-ove-strane/", timeout=20)
+    response = http.get(DS + "/nema-ove-strane/", timeout=20)
     assert response.status_code == 404
     assert "noindex" in response.text
 
@@ -77,7 +78,7 @@ def test_mg_hreflang_pairs_point_back(path):
 
 @pytest.mark.parametrize("path", ["/nema-ove-strane", "/en/no-such-page"])
 def test_mg_404_is_not_indexed(path):
-    response = requests.get(MG + path, timeout=20)
+    response = http.get(MG + path, timeout=20)
     assert response.status_code == 404
     assert 'name="robots" content="noindex' in response.text
 
@@ -86,7 +87,7 @@ def test_mg_404_is_not_indexed(path):
 def test_mg_every_local_asset_is_served(path):
     assets = set(re.findall(r'(?:src|href)="(/[^"#?]+\.(?:webp|png|svg|ico|woff2|jpg))"', _get(MG + path)))
     assert len(assets) >= 15
-    missing = [a for a in sorted(assets) if requests.head(MG + a, timeout=20).status_code != 200]
+    missing = [a for a in sorted(assets) if http.head(MG + a, timeout=20).status_code != 200]
     assert missing == []
 
 

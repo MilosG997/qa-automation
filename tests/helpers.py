@@ -1,6 +1,17 @@
 """Small checks reused across sites."""
 import json
 
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+# One shared HTTP session: retries short hiccups of a live site (a 5xx during a deploy, a 429, a dropped connection)
+# so a test only fails when the problem is real.
+http = requests.Session()
+http.mount("https://", HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504],
+                                                      allowed_methods=["GET", "HEAD"], raise_on_status=False)))
+http.headers["User-Agent"] = "qa-automation (+https://github.com/MilosG997/qa-automation)"
+
 
 def has_horizontal_scroll(driver):
     return driver.execute_script(

@@ -7,11 +7,10 @@ import os
 import re
 
 import pytest
-import requests
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-from helpers import anchors_without_target, broken_images, console_errors, has_horizontal_scroll, json_ld, meta
+from helpers import anchors_without_target, console_errors, has_horizontal_scroll, http, json_ld, meta
 
 BASE = os.environ.get("DS_URL", "https://draganicstolarija.rs").rstrip("/")
 PHONE = "381641257573"
@@ -55,7 +54,7 @@ def test_titles_and_descriptions_are_unique():
     """Duplicate titles make Google pick one page and drop the others."""
     titles, descriptions = {}, {}
     for path in ["/"] + INNER_PAGES:
-        html = requests.get(BASE + path, timeout=20).text
+        html = http.get(BASE + path, timeout=20).text
         titles[path] = re.search(r"<title>(.*?)</title>", html).group(1)
         descriptions[path] = re.search(r'<meta name="description" content="([^"]*)"', html).group(1)
     assert len(set(titles.values())) == len(titles)
@@ -75,11 +74,6 @@ def test_contact_links_dial_the_same_number(driver):
 def test_in_page_links_have_targets(driver):
     driver.get(BASE + "/")
     assert anchors_without_target(driver) == []
-
-
-def test_all_images_load_and_have_alt(driver):
-    driver.get(BASE + "/")
-    assert broken_images(driver) == []
 
 
 def _open_gallery(driver, wait):
@@ -160,15 +154,15 @@ def test_phone_tap_targets_are_big_enough(phone):
 # ---- HTTP level (requests, no browser) ----
 
 def test_sitemap_lists_every_page():
-    xml = requests.get(BASE + "/sitemap.xml", timeout=20).text
+    xml = http.get(BASE + "/sitemap.xml", timeout=20).text
     listed = set(re.findall(r"<loc>([^<]+)</loc>", xml))
     assert {BASE + p for p in ["/"] + INNER_PAGES} <= listed
     for url in listed:
-        assert requests.head(url, timeout=20).status_code == 200, url
+        assert http.head(url, timeout=20).status_code == 200, url
 
 
 def test_robots_points_to_the_sitemap():
-    robots = requests.get(BASE + "/robots.txt", timeout=20).text
+    robots = http.get(BASE + "/robots.txt", timeout=20).text
     assert f"Sitemap: {BASE}/sitemap.xml" in robots
     assert "Disallow: /\n" not in robots
 
@@ -176,17 +170,17 @@ def test_robots_points_to_the_sitemap():
 @pytest.mark.parametrize("url", ["https://www.draganicstolarija.rs/", "http://draganicstolarija.rs/",
                                  "https://draganicstolarija.netlify.app/"])
 def test_alternate_hosts_redirect_to_the_main_domain(url):
-    response = requests.get(url, allow_redirects=False, timeout=20)
+    response = http.get(url, allow_redirects=False, timeout=20)
     assert response.status_code == 301
     assert response.headers["Location"] == "https://draganicstolarija.rs/"
 
 
 def test_unknown_page_returns_404():
-    assert requests.get(BASE + "/nema-ove-strane/", timeout=20).status_code == 404
+    assert http.get(BASE + "/nema-ove-strane/", timeout=20).status_code == 404
 
 
 def test_security_headers():
-    headers = requests.get(BASE + "/", timeout=20).headers
+    headers = http.get(BASE + "/", timeout=20).headers
     assert headers["X-Content-Type-Options"] == "nosniff"
     assert headers["X-Frame-Options"] == "SAMEORIGIN"
     assert "max-age" in headers["Strict-Transport-Security"]

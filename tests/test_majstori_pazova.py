@@ -3,11 +3,10 @@ import os
 import re
 
 import pytest
-import requests
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
-from helpers import has_horizontal_scroll
+from helpers import has_horizontal_scroll, http
 
 BASE = os.environ.get("MP_URL", "https://majstoripazova.rs").rstrip("/")
 HOME_TEXT = "Koji majstor ti treba?"
@@ -63,7 +62,7 @@ def test_search_field_with_empty_category_list_shows_feedback(driver, wait):
 
 def test_android_app_links_are_verified():
     """assetlinks.json lets the Google Play app open the site full screen (Trusted Web Activity)."""
-    response = requests.get(BASE + "/.well-known/assetlinks.json", timeout=20)
+    response = http.get(BASE + "/.well-known/assetlinks.json", timeout=20)
     assert response.status_code == 200
     assert response.headers["Content-Type"].startswith("application/json")
     target = response.json()[0]["target"]
@@ -73,7 +72,7 @@ def test_android_app_links_are_verified():
 
 
 def test_web_app_manifest_is_installable():
-    manifest = requests.get(BASE + "/manifest.webmanifest", timeout=20).json()
+    manifest = http.get(BASE + "/manifest.webmanifest", timeout=20).json()
     assert manifest["name"] and manifest["start_url"] == "/"
     assert manifest["display"] == "standalone"
     sizes = {icon.get("sizes") for icon in manifest["icons"]}
@@ -82,22 +81,22 @@ def test_web_app_manifest_is_installable():
 
 @pytest.mark.parametrize("url", ["https://www.majstoripazova.rs/", "http://majstoripazova.rs/"])
 def test_alternate_hosts_redirect_to_the_main_domain(url):
-    response = requests.get(url, allow_redirects=False, timeout=20)
+    response = http.get(url, allow_redirects=False, timeout=20)
     assert response.status_code == 301
     assert response.headers["Location"] == "https://majstoripazova.rs/"
 
 
 def test_sitemap_pages_are_reachable():
-    xml = requests.get(BASE + "/sitemap.xml", timeout=20).text
+    xml = http.get(BASE + "/sitemap.xml", timeout=20).text
     urls = re.findall(r"<loc>([^<]+)</loc>", xml)
     assert BASE + "/" in urls
-    assert all(requests.get(u, timeout=20).status_code == 200 for u in urls)
-    assert "Sitemap: " + BASE + "/sitemap.xml" in requests.get(BASE + "/robots.txt", timeout=20).text
+    assert all(http.get(u, timeout=20).status_code == 200 for u in urls)
+    assert "Sitemap: " + BASE + "/sitemap.xml" in http.get(BASE + "/robots.txt", timeout=20).text
 
 
 def test_unknown_page_returns_404():
-    assert requests.get(BASE + "/nema-ove-strane", timeout=20).status_code == 404
+    assert http.get(BASE + "/nema-ove-strane", timeout=20).status_code == 404
 
 
 def test_https_is_enforced_with_hsts():
-    assert "max-age" in requests.get(BASE + "/", timeout=20).headers.get("Strict-Transport-Security", "")
+    assert "max-age" in http.get(BASE + "/", timeout=20).headers.get("Strict-Transport-Security", "")
