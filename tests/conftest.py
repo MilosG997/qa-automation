@@ -73,6 +73,8 @@ def pytest_terminal_summary(terminalreporter, exitstatus):
     run page, so the reason is visible without opening the log."""
     if not os.environ.get("GITHUB_ACTIONS"):
         return
+    counts = {k: len(terminalreporter.stats.get(k, [])) for k in ("passed", "failed", "error", "skipped", "xfailed", "rerun")}
+    terminalreporter.write_line("::notice title=Results::" + ", ".join(f"{n} {k}" for k, n in counts.items() if n))
     shown = 0
     for kind in ("failed", "error"):
         for report in terminalreporter.stats.get(kind, []):
