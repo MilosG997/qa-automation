@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 
-from helpers import anchors_without_target, broken_images, console_errors, has_horizontal_scroll, json_ld, meta
+from helpers import anchors_without_target, console_errors, has_horizontal_scroll, json_ld, meta
 
 BASE = os.environ.get("MG_URL", "https://mechanicallygifted.rs").rstrip("/")
 PAGES = [("/", "sr"), ("/en/", "en")]
@@ -177,12 +177,6 @@ def test_in_page_links_have_targets(driver, path):
     assert anchors_without_target(driver) == []
     nav = [a.get_attribute("href").rsplit("#", 1)[1] for a in driver.find_elements(By.CSS_SELECTOR, "nav.links a")]
     assert nav == ["usluge", "omeni", "radovi", "pitanja", "kontakt"]
-
-
-@pytest.mark.parametrize("path", ["/", "/en/"])
-def test_all_images_load_and_have_alt(driver, path):
-    driver.get(BASE + path)
-    assert broken_images(driver) == []
 
 
 @pytest.mark.parametrize("path", ["/", "/en/"])

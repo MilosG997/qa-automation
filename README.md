@@ -4,7 +4,7 @@
 
 End-to-end tests for a live Shopify store and three websites I built. The tests open a real browser, click through the site like a visitor and check what a customer (and Google) would see, on desktop and on a 375px phone. A second layer uses `requests` for what a browser hides: redirects, status codes, security headers and API responses.
 
-**136 tests** across 4 live sites.
+**134 tests** across 4 live sites.
 
 | Test file | Site | What it checks |
 |---|---|---|
