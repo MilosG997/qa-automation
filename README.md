@@ -4,7 +4,7 @@
 
 End-to-end tests for a live Shopify store and three websites I built. The tests open a real browser, click through the site like a visitor and check what a customer (and Google) would see, on desktop and on a 375px phone. A second layer uses `requests` for what a browser hides: redirects, status codes, security headers and API responses.
 
-**208 tests** across 4 live sites, run on every push and every Monday.
+**216 tests** across 4 live sites, run on every push and every Monday.
 
 | Test file | Site | What it checks |
 |---|---|---|
@@ -18,6 +18,7 @@ End-to-end tests for a live Shopify store and three websites I built. The tests 
 | [`test_privacy_and_manifests.py`](tests/test_privacy_and_manifests.py) | All three of my sites | Privacy pages exist, name Google Analytics where it is used and give a contact; web app manifests have a name, start URL, colors and icons that are really served. |
 | [`test_caching.py`](tests/test_caching.py) | Draganić Stolarija + mechanicallygifted.rs | Cache headers: fonts and fingerprinted CSS for a year (`immutable`), images for a month, HTML revalidated so a deploy is seen at once. |
 | [`test_security_headers.py`](tests/test_security_headers.py) | All three of my sites | HSTS for at least a year, `nosniff`, referrer policy, no server version leak, UTF-8 HTML. One real gap it found (no `nosniff` on Majstori Pazova) is kept as a strict xfail until fixed. |
+| [`test_structured_data.py`](tests/test_structured_data.py) | mechanicallygifted.rs | JSON-LD from the served HTML: the business node, an FAQ in the page language, and every FAQ question really visible on the page (Google's rule). |
 | [`test_local_seo.py`](tests/test_local_seo.py) | Draganić Stolarija, Majstori Pazova | Every city landing page names its city in H1, title and description (in the right grammatical case), the home page links them all; Majstori Pazova head tags. |
 
 A real bug this suite caught: the English meta description on my own site was 171 characters, over the ~160–170 that Google shows. Shortened and re-tested.
